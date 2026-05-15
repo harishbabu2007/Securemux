@@ -1,9 +1,7 @@
 #include "connection.h"
 #include "PTY.h"
 
-Client::Client(){
-    cout << "Client instance created" << endl;
-}
+Client::Client(){}
 
 void Client::create_socket(){
     /* Create local socket. */
@@ -19,21 +17,15 @@ void Client::create_socket(){
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, SOCKET_NAME, sizeof(addr.sun_path) - 1);
 
-    cout << "Connecting to server..." << endl;
-
     ret = connect(data_socket, (const struct sockaddr *) &addr,
                     sizeof(addr));
     if (ret == -1) {
         fprintf(stderr, "The server/daemon is down.\n");
         exit(EXIT_FAILURE);
     }
-
-    cout << "Connected!" << endl;
 }
 
-void Client::relay_io(){
-    cout << "Starting relay..." << endl;
-    
+void Client::relay_io(){    
     /* set raw mode on stdin */
     struct termios orig_termios, raw;
     tcgetattr(STDIN_FILENO, &orig_termios);
@@ -74,4 +66,17 @@ void Client::relay_io(){
 
     // Cleanup: Restore terminal mode
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+}
+
+int Client::get_data_socket(){
+    return data_socket;
+}
+
+void Client::send_command(string cmd) {
+    char *buf = (char *)cmd.c_str();
+    write(data_socket, buf, cmd.size());
+}
+
+string Client::read_response() {
+    return read_line(data_socket);
 }

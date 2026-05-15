@@ -11,20 +11,22 @@ pid_t create_pty_with_bash(int &master_fd) {
     pid_t pid = fork();
 
     if (pid  == 0) {
-        // child - becomes slave
         close(master_fd);
+
+        // close all fds inherited from server except slave
+        for (int fd = 3; fd < 256; fd++) {
+            if (fd != slave_fd) close(fd);
+        }
         
         setsid();
-
         ioctl(slave_fd, TIOCSCTTY, 0);
         dup2(slave_fd, 0);
         dup2(slave_fd, 1);
         dup2(slave_fd, 2);
         close(slave_fd);
-
-        execl("/usr/bin/bash", "bash", nullptr);
+        execl("/usr/bin/bash", "bash", (char*)nullptr);
         perror("execl failed");
-        exit(1);
+        _exit(1);
     }
 
     // parent - just close slave and return
